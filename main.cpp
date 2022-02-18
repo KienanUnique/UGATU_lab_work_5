@@ -28,7 +28,7 @@ Color getRandomColor() {
 }
 
 class RotatingRectangle {
-private:
+protected:
     const float maxRectangleSide = 100;
     const float minRectangleSide = 20;
     const float maxRectangleRotateRadius = 70;
@@ -41,43 +41,13 @@ private:
     RectangleShape rectangleShape;
     Vector2f rotateCenter;
     Color defaultColor;
-    double angularVelocity;
-    double currentAngle;
-    float rotateRadius;
-    int id;
+    double angularVelocity{};
+    double currentAngle{};
+    float rotateRadius{};
+    int id{};
 
 public:
-    RotatingRectangle(int _id) {
-        id = _id;
-
-        defaultColor = getRandomColor();
-        currentAngle = startAngle;
-
-        rectangleShape.setSize({getRandomFloat(minRectangleSide, maxRectangleSide),
-                                getRandomFloat(minRectangleSide, maxRectangleSide)});
-        generateCoordinates();
-        rectangleShape.setFillColor(defaultColor);
-        rectangleShape.setOrigin(rectangleShape.getSize().x / 2, rectangleShape.getSize().y / 2);
-
-        angularVelocity = getRandomFloat(minAngularVelocity, maxAngularVelocity, true);
-    }
-
-    void generateCoordinates() {
-        float delta = maxRectangleRotateRadius + std::max(rectangleShape.getSize().x, rectangleShape.getSize().y);
-        rotateCenter = {getRandomFloat(delta, width - delta), getRandomFloat(delta, height - delta)};
-        rotateRadius = getRandomFloat(minRectangleRotateRadius, maxRectangleRotateRadius);
-        rectangleShape.setPosition(rotateCenter.x, rotateCenter.y + rotateRadius);
-    }
-
-    void update() {
-        float x = rotateRadius * (float)cos(currentAngle) + rotateCenter.x;
-        float y = rotateRadius * (float)sin(currentAngle) + rotateCenter.y;
-        rectangleShape.setPosition(x, y);
-        currentAngle += angularVelocity;
-        if(currentAngle >= 360){
-            currentAngle -= 360;
-        }
-    }
+    virtual void update() = 0;
 
     RectangleShape getShape() {
         return rectangleShape;
@@ -106,13 +76,46 @@ public:
     bool isDefaultColored(){
         return rectangleShape.getFillColor() == defaultColor;
     }
-private:
+};
 
+class RotatingRectangleOriginal : public RotatingRectangle {
+public:
+    RotatingRectangleOriginal(int _id) {
+        id = _id;
+
+        defaultColor = getRandomColor();
+        currentAngle = startAngle;
+
+        rectangleShape.setSize({getRandomFloat(minRectangleSide, maxRectangleSide),
+                                getRandomFloat(minRectangleSide, maxRectangleSide)});
+        generateCoordinates();
+        rectangleShape.setFillColor(defaultColor);
+        rectangleShape.setOrigin(rectangleShape.getSize().x / 2, rectangleShape.getSize().y / 2);
+
+        angularVelocity = getRandomFloat(minAngularVelocity, maxAngularVelocity, true);
+    }
+
+    void generateCoordinates() {
+        float delta = maxRectangleRotateRadius + std::max(rectangleShape.getSize().x, rectangleShape.getSize().y);
+        rotateCenter = {getRandomFloat(delta, width - delta), getRandomFloat(delta, height - delta)};
+        rotateRadius = getRandomFloat(minRectangleRotateRadius, maxRectangleRotateRadius);
+        rectangleShape.setPosition(rotateCenter.x, rotateCenter.y + rotateRadius);
+    }
+
+    virtual void update() {
+        float x = rotateRadius * (float)cos(currentAngle) + rotateCenter.x;
+        float y = rotateRadius * (float)sin(currentAngle) + rotateCenter.y;
+        rectangleShape.setPosition(x, y);
+        currentAngle += angularVelocity;
+        if(currentAngle >= 360){
+            currentAngle -= 360;
+        }
+    }
 };
 
 class RotatingRectangleHandler {
 private:
-    std::vector<RotatingRectangle> rotatingRectangles;
+    std::vector<RotatingRectangleOriginal> rotatingRectangles;
 public:
     void spawnMany(int countOfObjects) {
         for (int i = 0; i < countOfObjects; i++) {
@@ -141,14 +144,14 @@ public:
 
 private:
     void spawnNew() {
-        RotatingRectangle rotatingRectangle = RotatingRectangle((int) rotatingRectangles.size());
+        RotatingRectangleOriginal rotatingRectangle = RotatingRectangleOriginal((int) rotatingRectangles.size());
         while (isCollidingOthers(rotatingRectangle)) {
             rotatingRectangle.generateCoordinates();
         }
         rotatingRectangles.push_back(rotatingRectangle);
     }
 
-    bool isCollidingOthers(RotatingRectangle objectToCheck) {
+    bool isCollidingOthers(RotatingRectangleOriginal objectToCheck) {
         for (auto &i: rotatingRectangles) {
             if (i.getId() != objectToCheck.getId() && objectToCheck.isCollidingShape(i.getShape())) {
                 return true;
